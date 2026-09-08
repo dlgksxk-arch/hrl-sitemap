@@ -1,0 +1,37 @@
+name: sitemap
+
+# 블로그 자체 sitemap.xml 을 읽어 ?m=1 URL 목록(sitemap-m1.txt)을 만든다. 이유는 build.py 머리말.
+# 비밀이 없다 — 자기 저장소에 쓰는 데는 GITHUB_TOKEN 이면 된다.
+# 블로거 robots.txt 가 이 파일을 가리킨다:
+#   Sitemap: https://raw.githubusercontent.com/dlgksxk-arch/hrl-sitemap/main/sitemap-m1.txt
+
+on:
+  schedule:
+    - cron: "23 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sitemap
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build
+        run: python3 build.py
+
+      - name: commit if changed
+        run: |
+          git config user.name  "hrl-bot"
+          git config user.email "bot@homerepairledger.com"
+          git add sitemap-m1.txt
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "sitemap: $(grep -c . sitemap-m1.txt) urls"
+          git push
